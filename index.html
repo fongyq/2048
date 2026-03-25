@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>2048</title>
+  <style>
+    :root {
+      --bg: #faf8ef;
+      --text-dark: #776e65;
+      --text-darker: #3c3a32;
+      --score-bg: #bbada0;
+      --score-label: #eee4da;
+      --grid-bg: #bbada0;
+      --cell-empty: #cdc1b4;
+      --btn-bg: #8f7a66;
+      --btn-text: #f9f6f2;
+      --tile-2: #eee4da;
+      --tile-4: #ede0c8;
+      --tile-8: #f2b179;
+      --tile-16: #f59563;
+      --tile-32: #f67c5f;
+      --tile-64: #f65e3b;
+      --tile-128: #edcf72;
+      --tile-256: #edcc61;
+      --tile-512: #edc850;
+      --tile-1024: #edc53f;
+      --tile-2048: #edc22e;
+      --tile-super: #3c3a32;
+      --gap: clamp(4px, 1.8vmin, 10px);
+      --pad: clamp(8px, 2.5vmin, 16px);
+      --radius: clamp(4px, 1.2vmin, 8px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: "Clear Sans", "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      padding: var(--pad);
+      padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
+      padding-top: max(var(--pad), env(safe-area-inset-top));
+      padding-left: max(var(--pad), env(safe-area-inset-left));
+      padding-right: max(var(--pad), env(safe-area-inset-right));
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 12vw, 4.25rem);
+      font-weight: 700;
+      color: var(--text-darker);
+      line-height: 0.9;
+    }
+
+    .scores {
+      display: flex;
+      gap: clamp(4px, 1.5vmin, 8px);
+    }
+
+    .score-box {
+      background: var(--score-bg);
+      border-radius: var(--radius);
+      padding: clamp(3px, 1vmin, 6px) clamp(10px, 3vmin, 18px);
+      text-align: center;
+      min-width: clamp(56px, 18vw, 80px);
+    }
+
+    .score-box .label {
+      display: block;
+      font-size: clamp(0.55rem, 2.2vw, 0.75rem);
+      font-weight: 700;
+      color: var(--score-label);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .score-box .value {
+      display: block;
+      font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+    }
+
+    .mid-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 12px;
+      margin-top: clamp(8px, 2vmin, 14px);
+      flex-shrink: 0;
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: clamp(0.8rem, 3.2vw, 1rem);
+      line-height: 1.35;
+      flex: 1 1 200px;
+      min-width: 0;
+    }
+
+    .btn {
+      font: inherit;
+      font-weight: 700;
+      font-size: clamp(0.75rem, 3vw, 0.95rem);
+      border: none;
+      border-radius: var(--radius);
+      padding: clamp(6px, 1.8vmin, 10px) clamp(14px, 4vmin, 20px);
+      cursor: pointer;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      flex-shrink: 0;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .size-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      margin-top: clamp(8px, 2vmin, 12px);
+      flex-shrink: 0;
+    }
+
+    .size-row .hint {
+      font-size: clamp(0.7rem, 2.8vw, 0.85rem);
+      margin-right: 4px;
+    }
+
+    .size-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .size-btns button {
+      font: inherit;
+      font-weight: 700;
+      font-size: clamp(0.7rem, 2.8vw, 0.8rem);
+      width: clamp(36px, 10vw, 44px);
+      height: clamp(36px, 10vw, 44px);
+      border: none;
+      border-radius: var(--radius);
+      background: var(--cell-empty);
+      color: var(--text-darker);
+      cursor: pointer;
+    }
+
+    .size-btns button.active {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+
+    .board-wrap {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: clamp(8px, 2vmin, 14px);
+      touch-action: none;
+    }
+
+    .board {
+      --n: 4;
+      background: var(--grid-bg);
+      border-radius: calc(var(--radius) + 2px);
+      padding: var(--gap);
+      width: min(100%, calc(100dvh - 11.5rem), calc(100vw - 2 * var(--pad)), 480px);
+      aspect-ratio: 1;
+      max-height: 100%;
+      position: relative;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .grid-bg {
+      display: grid;
+      grid-template-columns: repeat(var(--n), 1fr);
+      grid-template-rows: repeat(var(--n), 1fr);
+      gap: var(--gap);
+      width: 100%;
+      height: 100%;
+    }
+
+    .cell {
+      background: var(--cell-empty);
+      border-radius: calc(var(--radius) * 0.85);
+    }
+
+    .tiles-layer {
+      position: absolute;
+      inset: var(--gap);
+      pointer-events: none;
+    }
+
+    .tile {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border-radius: calc(var(--radius) * 0.85);
+      transition: transform 100ms ease-out;
+    }
+
+    .tile.new {
+      animation: pop 160ms ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.5); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(238, 228, 218, 0.92);
+      border-radius: calc(var(--radius) + 2px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .overlay h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 6vw, 2.2rem);
+      color: var(--text-darker);
+    }
+
+    .overlay p {
+      margin: 0;
+      font-size: clamp(0.9rem, 3.5vw, 1.05rem);
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-row">
+      <h1>2048</h1>
+      <div class="scores">
+        <div class="score-box" aria-live="polite">
+          <span class="label">Score</span>
+          <span class="value" id="scoreEl">0</span>
+        </div>
+        <div class="score-box" aria-live="polite">
+          <span class="label">Best</span>
+          <span class="value" id="bestEl">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mid-row">
+      <p class="tagline">Join the numbers and get to the 2048 tile!</p>
+      <button type="button" class="btn" id="newGameBtn">New Game</button>
+    </div>
+
+    <div class="size-row">
+      <span class="hint">Grid</span>
+      <div class="size-btns" role="group" aria-label="棋盘大小">
+        <button type="button" data-size="3">3×3</button>
+        <button type="button" data-size="4" class="active">4×4</button>
+        <button type="button" data-size="5">5×5</button>
+        <button type="button" data-size="6">6×6</button>
+      </div>
+    </div>
+
+    <div class="board-wrap" id="boardWrap">
+      <div class="board" id="board" tabindex="0" role="application" aria-label="2048 游戏棋盘，使用方向键或滑动操作">
+        <div class="grid-bg" id="gridBg"></div>
+        <div class="tiles-layer" id="tilesLayer"></div>
+        <div class="overlay hidden" id="overlay">
+          <h2 id="overlayTitle"></h2>
+          <p id="overlayMsg"></p>
+          <button type="button" class="btn" id="overlayBtn">Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="sr-only" id="liveStatus" aria-live="assertive"></p>
+
+  <script>
+    (function () {
+      const STORAGE_BEST = "2048-best-scores-v1";
+
+      const TILE_COLORS = {
+        2: { bg: "var(--tile-2)", fg: "var(--text-darker)" },
+        4: { bg: "var(--tile-4)", fg: "var(--text-darker)" },
+        8: { bg: "var(--tile-8)", fg: "#f9f6f2" },
+        16: { bg: "var(--tile-16)", fg: "#f9f6f2" },
+        32: { bg: "var(--tile-32)", fg: "#f9f6f2" },
+        64: { bg: "var(--tile-64)", fg: "#f9f6f2" },
+        128: { bg: "var(--tile-128)", fg: "#f9f6f2" },
+        256: { bg: "var(--tile-256)", fg: "#f9f6f2" },
+        512: { bg: "var(--tile-512)", fg: "#f9f6f2" },
+        1024: { bg: "var(--tile-1024)", fg: "#f9f6f2" },
+        2048: { bg: "var(--tile-2048)", fg: "#f9f6f2" },
+      };
+
+      const board = document.getElementById("board");
+      const gridBg = document.getElementById("gridBg");
+      const tilesLayer = document.getElementById("tilesLayer");
+      const scoreEl = document.getElementById("scoreEl");
+      const bestEl = document.getElementById("bestEl");
+      const newGameBtn = document.getElementById("newGameBtn");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlayTitle");
+      const overlayMsg = document.getElementById("overlayMsg");
+      const overlayBtn = document.getElementById("overlayBtn");
+      const liveStatus = document.getElementById("liveStatus");
+      const sizeBtns = document.querySelectorAll(".size-btns button");
+
+      let size = 4;
+      let grid = [];
+      let score = 0;
+      let bestBySize = { 3: 0, 4: 0, 5: 0, 6: 0 };
+      let won = false;
+      let gameOver = false;
+
+      function loadBest() {
+        try {
+          const raw = localStorage.getItem(STORAGE_BEST);
+          if (raw) {
+            const o = JSON.parse(raw);
+            if (o && typeof o === "object") {
+              [3, 4, 5, 6].forEach((n) => {
+                if (typeof o[n] === "number") bestBySize[n] = o[n];
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      function saveBest() {
+        try {
+          localStorage.setItem(STORAGE_BEST, JSON.stringify(bestBySize));
+        } catch (_) {}
+      }
+
+      function bestForCurrent() {
+        return bestBySize[size] || 0;
+      }
+
+      function updateScoreDisplay() {
+        scoreEl.textContent = String(score);
+        const b = Math.max(bestForCurrent(), score);
+        bestEl.textContent = String(b);
+      }
+
+      function fontSizeForValue(v, n) {
+        const len = String(v).length;
+        const base = n <= 4 ? 22 : n === 5 ? 18 : 15;
+        const scale = len >= 4 ? 0.72 : len === 3 ? 0.85 : 1;
+        return `clamp(${base * scale * 0.35}vmin, ${base * scale * 0.12}rem, ${base * scale * 1.2}px)`;
+      }
+
+      function tileStyle(v) {
+        const c = TILE_COLORS[v] || { bg: "var(--tile-super)", fg: "#f9f6f2" };
+        return { background: c.bg, color: c.fg };
+      }
+
+      function buildEmptyGrid() {
+        return Array.from({ length: size }, () => Array(size).fill(0));
+      }
+
+      function renderBackgroundCells() {
+        gridBg.innerHTML = "";
+        gridBg.style.setProperty("--n", String(size));
+        for (let i = 0; i < size * size; i++) {
+          const d = document.createElement("div");
+          d.className = "cell";
+          gridBg.appendChild(d);
+        }
+      }
+
+      function renderTiles(animateNew) {
+        tilesLayer.innerHTML = "";
+        const pad = parseFloat(getComputedStyle(board).paddingLeft) || 0;
+        const inner = board.clientWidth - 2 * pad;
+        const gapStr = getComputedStyle(gridBg).gap || getComputedStyle(gridBg).columnGap;
+        const gap = parseFloat(gapStr) || 8;
+        const cell = (inner - gap * (size - 1)) / size;
+
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            const v = grid[r][c];
+            if (!v) continue;
+            const el = document.createElement("div");
+            el.className = "tile";
+            if (animateNew && animateNew[r + "," + c]) el.classList.add("new");
+            el.textContent = String(v);
+            const st = tileStyle(v);
+            el.style.background = st.background;
+            el.style.color = st.color;
+            el.style.fontSize = fontSizeForValue(v, size);
+            el.style.width = `${cell}px`;
+            el.style.height = `${cell}px`;
+            el.style.left = `${c * (cell + gap)}px`;
+            el.style.top = `${r * (cell + gap)}px`;
+            tilesLayer.appendChild(el);
+          }
+        }
+      }
+
+      function gridsEqual(a, b) {
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (a[r][c] !== b[r][c]) return false;
+          }
+        }
+        return true;
+      }
+
+      function moveLine(line) {
+        const nums = line.filter((x) => x > 0);
+        const out = [];
+        let gained = 0;
+        let i = 0;
+        while (i < nums.length) {
+          if (i + 1 < nums.length && nums[i] === nums[i + 1]) {
+            const m = nums[i] * 2;
+            out.push(m);
+            gained += m;
+            i += 2;
+          } else {
+            out.push(nums[i]);
+            i += 1;
+          }
+        }
+        while (out.length < size) out.push(0);
+        return { line: out, gained };
+      }
+
+      function move(dir) {
+        if (gameOver) return;
+        if (!overlay.classList.contains("hidden")) return;
+        const prev = grid.map((row) => row.slice());
+        let totalGained = 0;
+        let next = buildEmptyGrid();
+
+        if (dir === "left") {
+          for (let r = 0; r < size; r++) {
+            const { line, gained } = moveLine(prev[r]);
+            next[r] = line;
+            totalGained += gained;
+          }
+        } else if (dir === "right") {
+          for (let r = 0; r < size; r++) {
+            const rev = prev[r].slice().reverse();
+            const { line, gained } = moveLine(rev);
+            next[r] = line.reverse();
+            totalGained += gained;
+          }
+        } else if (dir === "up") {
+          for (let c = 0; c < size; c++) {
+            const col = [];
+            for (let r = 0; r < size; r++) col.push(prev[r][c]);
+            const { line, gained } = moveLine(col);
+            totalGained += gained;
+            for (let r = 0; r < size; r++) next[r][c] = line[r];
+          }
+        } else if (dir === "down") {
+          for (let c = 0; c < size; c++) {
+            const col = [];
+            for (let r = size - 1; r >= 0; r--) col.push(prev[r][c]);
+            const { line, gained } = moveLine(col);
+            totalGained += gained;
+            for (let r = 0; r < size; r++) next[size - 1 - r][c] = line[r];
+          }
+        }
+
+        if (gridsEqual(prev, next)) return false;
+
+        grid = next;
+        score += totalGained;
+        if (score > bestForCurrent()) {
+          bestBySize[size] = score;
+          saveBest();
+        }
+        updateScoreDisplay();
+
+        const empty = [];
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (grid[r][c] === 0) empty.push([r, c]);
+          }
+        }
+        const animateNew = {};
+        if (empty.length) {
+          const pick = empty[Math.floor(Math.random() * empty.length)];
+          const [rr, cc] = pick;
+          grid[rr][cc] = Math.random() < 0.9 ? 2 : 4;
+          animateNew[`${rr},${cc}`] = true;
+        }
+
+        renderTiles(animateNew);
+        checkEnd();
+        return true;
+      }
+
+      function hasWon() {
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (grid[r][c] === 2048) return true;
+          }
+        }
+        return false;
+      }
+
+      function canMove() {
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            if (grid[r][c] === 0) return true;
+            const v = grid[r][c];
+            if (c + 1 < size && grid[r][c + 1] === v) return true;
+            if (r + 1 < size && grid[r + 1][c] === v) return true;
+          }
+        }
+        return false;
+      }
+
+      function checkEnd() {
+        if (!won && hasWon()) {
+          won = true;
+          overlayTitle.textContent = "You win!";
+          overlayMsg.textContent = "You reached 2048. Keep going or start a new game.";
+          overlayBtn.textContent = "Keep playing";
+          overlay.classList.remove("hidden");
+          liveStatus.textContent = "已达成 2048";
+        }
+        if (!canMove()) {
+          gameOver = true;
+          overlayTitle.textContent = "Game over!";
+          overlayMsg.textContent = "No more moves. Try again.";
+          overlayBtn.textContent = "Try again";
+          overlay.classList.remove("hidden");
+          liveStatus.textContent = "游戏结束";
+        }
+      }
+
+      function hideOverlay() {
+        overlay.classList.add("hidden");
+      }
+
+      function initGame() {
+        loadBest();
+        won = false;
+        gameOver = false;
+        hideOverlay();
+        grid = buildEmptyGrid();
+        score = 0;
+        updateScoreDisplay();
+        renderBackgroundCells();
+
+        const spots = [];
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) spots.push([r, c]);
+        }
+        const a = spots.splice(Math.floor(Math.random() * spots.length), 1)[0];
+        const b = spots.splice(Math.floor(Math.random() * spots.length), 1)[0];
+        grid[a[0]][a[1]] = 2;
+        grid[b[0]][b[1]] = Math.random() < 0.9 ? 2 : 4;
+
+        const anim = {};
+        anim[`${a[0]},${a[1]}`] = true;
+        anim[`${b[0]},${b[1]}`] = true;
+        renderTiles(anim);
+        liveStatus.textContent = "新游戏已开始";
+      }
+
+      function setSize(n) {
+        if (n === size) return;
+        size = n;
+        board.style.setProperty("--n", String(size));
+        sizeBtns.forEach((btn) => {
+          btn.classList.toggle("active", Number(btn.dataset.size) === size);
+        });
+        initGame();
+      }
+
+      newGameBtn.addEventListener("click", () => initGame());
+      overlayBtn.addEventListener("click", () => {
+        if (gameOver) {
+          initGame();
+        } else if (won) {
+          hideOverlay();
+        }
+      });
+
+      sizeBtns.forEach((btn) => {
+        btn.addEventListener("click", () => setSize(Number(btn.dataset.size)));
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+          e.preventDefault();
+          const map = {
+            ArrowUp: "up",
+            ArrowDown: "down",
+            ArrowLeft: "left",
+            ArrowRight: "right",
+          };
+          move(map[e.key]);
+        }
+      });
+
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      board.addEventListener(
+        "touchstart",
+        (e) => {
+          if (e.touches.length !== 1) return;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        },
+        { passive: true }
+      );
+
+      board.addEventListener(
+        "touchend",
+        (e) => {
+          if (!e.changedTouches.length) return;
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 28) return;
+          if (Math.abs(dx) > Math.abs(dy)) {
+            move(dx > 0 ? "right" : "left");
+          } else {
+            move(dy > 0 ? "down" : "up");
+          }
+        },
+        { passive: true }
+      );
+
+      window.addEventListener("resize", () => renderTiles(null));
+
+      initGame();
+    })();
+  </script>
+</body>
+</html>
