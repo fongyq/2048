@@ -216,6 +216,10 @@
     }
 
     @media (max-width: 768px) {
+      :root {
+        --board-size: min(100%, calc(100dvh - 9.8rem), calc(100vw - 2 * var(--pad)), 560px);
+      }
+
       .mid-row {
         margin-top: clamp(12px, 3.2vmin, 18px);
       }
@@ -226,7 +230,7 @@
 
       .board-wrap {
         align-items: flex-start;
-        margin-top: clamp(6px, 1.8vmin, 10px);
+        margin-top: clamp(8px, 2.2vmin, 12px);
       }
     }
 
