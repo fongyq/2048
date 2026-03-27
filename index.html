@@ -36,6 +36,8 @@
 
     * {
       box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     html, body {
@@ -215,16 +217,16 @@
 
     @media (max-width: 768px) {
       .mid-row {
-        margin-top: clamp(10px, 2.8vmin, 16px);
+        margin-top: clamp(12px, 3.2vmin, 18px);
       }
 
       .size-row {
-        margin-top: clamp(10px, 2.8vmin, 14px);
+        margin-top: clamp(12px, 3.2vmin, 17px);
       }
 
       .board-wrap {
         align-items: flex-start;
-        margin-top: clamp(4px, 1.3vmin, 8px);
+        margin-top: clamp(6px, 1.8vmin, 10px);
       }
     }
 
