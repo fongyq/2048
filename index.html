@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>2048</title>
+  <link rel="icon" href="../games/magnum.ico" type="image/x-icon">
   <style>
     :root {
       --bg: #faf8ef;
@@ -151,28 +152,25 @@
     .size-row {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 6px 10px;
+      width: 100%;
       margin-top: clamp(8px, 2vmin, 12px);
       flex-shrink: 0;
     }
 
-    .size-row .hint {
-      font-size: clamp(0.7rem, 2.8vw, 0.85rem);
-      margin-right: 4px;
-    }
-
     .size-btns {
       display: flex;
-      gap: 6px;
+      width: 100%;
+      justify-content: space-evenly;
+      align-items: center;
+      gap: 0;
     }
 
     .size-btns button {
       font: inherit;
       font-weight: 700;
-      font-size: clamp(0.7rem, 2.8vw, 0.8rem);
-      width: clamp(36px, 10vw, 44px);
-      height: clamp(36px, 10vw, 44px);
+      font-size: clamp(0.56rem, 2.24vw, 0.64rem);
+      width: clamp(29px, 8vw, 35px);
+      height: clamp(29px, 8vw, 35px);
       border: none;
       border-radius: var(--radius);
       background: var(--cell-empty);
@@ -224,14 +222,21 @@
     .tiles-layer {
       position: absolute;
       inset: var(--gap);
+      display: grid;
+      grid-template-columns: repeat(var(--n), 1fr);
+      grid-template-rows: repeat(var(--n), 1fr);
+      gap: var(--gap);
       pointer-events: none;
     }
 
     .tile {
-      position: absolute;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
       font-weight: 700;
       border-radius: calc(var(--radius) * 0.85);
       transition: transform 100ms ease-out;
@@ -310,7 +315,6 @@
     </div>
 
     <div class="size-row">
-      <span class="hint">Grid</span>
       <div class="size-btns" role="group" aria-label="棋盘大小">
         <button type="button" data-size="3">3×3</button>
         <button type="button" data-size="4" class="active">4×4</button>
@@ -418,8 +422,8 @@
       }
 
       function renderBackgroundCells() {
+        board.style.setProperty("--n", String(size));
         gridBg.innerHTML = "";
-        gridBg.style.setProperty("--n", String(size));
         for (let i = 0; i < size * size; i++) {
           const d = document.createElement("div");
           d.className = "cell";
@@ -429,12 +433,6 @@
 
       function renderTiles(animateNew) {
         tilesLayer.innerHTML = "";
-        const pad = parseFloat(getComputedStyle(board).paddingLeft) || 0;
-        const inner = board.clientWidth - 2 * pad;
-        const gapStr = getComputedStyle(gridBg).gap || getComputedStyle(gridBg).columnGap;
-        const gap = parseFloat(gapStr) || 8;
-        const cell = (inner - gap * (size - 1)) / size;
-
         for (let r = 0; r < size; r++) {
           for (let c = 0; c < size; c++) {
             const v = grid[r][c];
@@ -443,14 +441,12 @@
             el.className = "tile";
             if (animateNew && animateNew[r + "," + c]) el.classList.add("new");
             el.textContent = String(v);
+            el.style.gridRow = String(r + 1);
+            el.style.gridColumn = String(c + 1);
             const st = tileStyle(v);
             el.style.background = st.background;
             el.style.color = st.color;
             el.style.fontSize = fontSizeForValue(v, size);
-            el.style.width = `${cell}px`;
-            el.style.height = `${cell}px`;
-            el.style.left = `${c * (cell + gap)}px`;
-            el.style.top = `${r * (cell + gap)}px`;
             tilesLayer.appendChild(el);
           }
         }
@@ -576,17 +572,17 @@
       function checkEnd() {
         if (!won && hasWon()) {
           won = true;
-          overlayTitle.textContent = "You win!";
+          overlayTitle.textContent = "CONGRATULATIONS!";
           overlayMsg.textContent = "You reached 2048. Keep going or start a new game.";
-          overlayBtn.textContent = "Keep playing";
+          overlayBtn.textContent = "CONTINUE";
           overlay.classList.remove("hidden");
           liveStatus.textContent = "已达成 2048";
         }
         if (!canMove()) {
           gameOver = true;
-          overlayTitle.textContent = "Game over!";
+          overlayTitle.textContent = "GAME OVER";
           overlayMsg.textContent = "No more moves. Try again.";
-          overlayBtn.textContent = "Try again";
+          overlayBtn.textContent = "NEW GAME";
           overlay.classList.remove("hidden");
           liveStatus.textContent = "游戏结束";
         }
@@ -625,7 +621,6 @@
       function setSize(n) {
         if (n === size) return;
         size = n;
-        board.style.setProperty("--n", String(size));
         sizeBtns.forEach((btn) => {
           btn.classList.toggle("active", Number(btn.dataset.size) === size);
         });
